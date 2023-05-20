@@ -1,11 +1,11 @@
 #!/bin/bash
 ###########################################################
-# Script Auto Install Apache, PHP 7.4, MariaDB, phpmyadmin,FFMPEG,TRANSMISSION,OPENVPN,LETSENCRYPT
-# Author      :  MAVEN
-# Instagram   :  https://www.kalixhosting.com
-# Version     :  1.1.0
-# Date        :  05/20/2023
-# OS          :  UBUNTU
+# Script Auto Install Apache, PHP 7.4, MariaDB, phpmyadmin, FFMPEG, TRANSMISSION, OPENVPN, LETSENCRYPT
+# Author     :  MAVEN
+# Instagram  :  https://www.kalixhosting.com
+# Version    :  1.1.0
+# Date       :  05/20/2023
+# OS         :  UBUNTU
 ###########################################################
 
 echo "Auto Install LAMP Ubuntu"
@@ -17,45 +17,43 @@ echo "© 2023 KalixHosting.com"
 sudo apt-get update -y
 sudo apt-get upgrade -y
 
-# Install required packages
+# Install nano and git
 sudo apt-get install nano git -y
 
-# APACHE
+# Install Apache
 sudo apt install -y apache2 apache2-utils
 sudo systemctl start apache2
 sudo systemctl enable apache2
 
 # Configure Apache ports
 sudo apt-get install iptables-persistent -y
-sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT
-sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
-sudo iptables -I INPUT -p tcp --dport 22 -j ACCEPT
-sudo iptables -I INPUT -p tcp --dport 9091 -j ACCEPT
-sudo iptables -I INPUT -p tcp --dport 3389 -j ACCEPT
+declare -a ports=("80" "443" "22" "9091" "3389")
+for port in "${ports[@]}"
+do
+    sudo iptables -I INPUT -p tcp --dport $port -j ACCEPT
+done
 sudo iptables-save | sudo tee /etc/iptables/rules.v4
 
-# Set permissions for Apache
+# Set ownership and reload Apache
 sudo chown www-data:www-data /var/www/html/ -R
 sudo systemctl reload apache2
 
 # Configure UFW
 sudo apt-get install ufw -y
-sudo ufw allow 22/tcp
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw allow 21/tcp
-sudo ufw allow 3389/tcp
-sudo ufw allow 9091/tcp
-sudo ufw allow 777/tcp
-sudo ufw enable -y
+declare -a ufw_ports=("22" "80" "443" "21" "3389" "9091")
+for port in "${ufw_ports[@]}"
+do
+    sudo ufw allow $port/tcp
+done
+sudo ufw enable
 
-# MARIADB
+# Install MariaDB
 sudo apt install mariadb-server mariadb-client -y
 sudo systemctl start mariadb
 sudo systemctl enable mariadb
 sudo mysql_secure_installation
 
-# PHP7.4
+# Install PHP 7.4
 sudo apt install software-properties-common -y
 sudo add-apt-repository ppa:ondrej/php -y
 sudo apt install php7.4 -y
@@ -63,23 +61,14 @@ sudo apt install php libapache2-mod-php php7.4-mysql php7.4-bcmath php7.4-common
 sudo systemctl restart apache2
 echo "<?php phpinfo(); ?>" | sudo tee /var/www/html/info.php
 
-# PHPMYADMIN
+# Install phpMyAdmin
 sudo apt-get install phpmyadmin -y
 
-# FFMPEG
-sudo apt-get install ffmpeg -y
+# Install FFMPEG, RAR, zip, unzip
+sudo apt-get install ffmpeg rar unrar zip unzip -y
 
-# RAR
-sudo apt-get install rar unrar -y
-
-# ZIP
-sudo apt-get install zip unzip -y
-
-# CURL
-sudo apt-get install curl -y
-
-# Composer
-sudo apt install php-cli unzip -y
+# Install CURL and Composer
+sudo apt-get install curl php-cli unzip -y
 curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
 HASH=`curl -sS https://composer.github.io/installer.sig`
 php -r "if (hash_file('SHA384', '/tmp/composer-setup.php') === '$HASH') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
@@ -88,63 +77,57 @@ sudo php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=compose
 # Verify Composer installation
 composer
 
-# YTDL
+# Install yt-dlp
 sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
 sudo chmod a+rx /usr/local/bin/yt-dlp
 
-# Transmission
+# Install Transmission
 sudo apt update && sudo apt upgrade -y
 sudo apt-get install transmission-cli transmission-common transmission-daemon -y
 
-echo "######## INSTALLING AND CONFIGURING MARIADB #########"
+echo "######## FIX MYSQL TO WORK WITH PHPMYADMIN AND ENTER INFO #########"
 
-# Install MariaDB
-sudo apt update
-sudo apt install mariadb-server -y
-
-# Stop MariaDB service
+# Stop the MariaDB service
 sudo systemctl stop mariadb
 
-# Start MariaDB with skip-grant-tables and skip-networking options
+# Start MySQL in safe mode without grant tables and networking
 sudo mysqld_safe --skip-grant-tables --skip-networking &
 
-# Wait for MariaDB to start
+# Wait for MySQL to start
 sleep 5
 
-# Enter MySQL shell
-echo "## AFTER MYSQL IS LOGGED IN, YOU WILL SEE THIS PROMPT (MariaDB [(none)]>) ##"
-mysql -u root
+# Log in to MySQL
+echo "##AFTER MYSQL IS LOGGED IN YOU WILL SEE THIS PROMPT (MariaDB [(none)]>)##"
+echo "mysql -u root"
 
 # Flush privileges
-echo "## FIRST ENTER: FLUSH PRIVILEGES; ##"
-echo "FLUSH PRIVILEGES;"
+echo "##FIRST ENTER: FLUSH PRIVILEGES; ##"
+echo "FLUSH PRIVILEGES;" | mysql -u root
 
-# Set a new password for 'root' user
-echo "## THEN ENTER: ALTER USER 'root'@'localhost' IDENTIFIED BY 'new_password'; TO SETUP PHPMYADMIN/MYSQL PASSWORD ##"
-echo "ALTER USER 'root'@'localhost' IDENTIFIED BY 'Z91*6tl8';"
+# Set new password for root user
+echo "##THEN ENTER: ALTER USER 'root'@'localhost' IDENTIFIED BY 'new_password'; TO SETUP PHPMYADMIN/MYSQL PASSWORD ##"
+echo "ALTER USER 'root'@'localhost' IDENTIFIED BY 'Z91*6tl8';" | mysql -u root
 
-# Exit MySQL shell
-echo "## NEXT ENTER: exit ##"
-echo "exit"
+# Exit from MySQL
+echo "##NEXT ENTER: exit ##"
+echo "exit" | mysql -u root
 
-# Start MariaDB service
-echo "## RESTART SERVICES: sudo systemctl start mariadb ##"
+# Restart the MariaDB service
+echo "##RESTART SERVICE: sudo systemctl start mariadb ##"
 sudo systemctl start mariadb
 
-echo "######## MARIADB CONFIGURATION COMPLETED #########"
+# Fix permissions for /var/www/html and /root directories
+sudo chmod 777 /var/www/html/
+sudo chmod +rwx /var/www/html/
+sudo chmod 777 /root
+sudo chmod +rwx /root
 
-# Set permissions for /var/www/html/ and /root
-chmod 777 /var/www/html/
-chmod +rwx /var/www/html/
-chmod 777 /root
-chmod +rwx /root
-
-# OpenVPN
+# Install OpenVPN
 wget -4 https://git.io/vpn -O openvpn-install.sh && bash openvpn-install.sh
 
-# Let's Encrypt
+# Install Let's Encrypt
 sudo apt install certbot python3-certbot-apache -y
 sudo certbot --apache
 
-# Completed
+# Completion message
 echo "######## KALIXHOSTING AUTOINSTALL FOR UBUNTU 20 | FINISH #########"
