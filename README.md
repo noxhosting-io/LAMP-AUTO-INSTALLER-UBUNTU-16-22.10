@@ -38,7 +38,7 @@ UBUNTU 16.04 - 22.10 LAMP AUTO INSTALLER SCRIPT
 Install Script
 
 ```bash
- wget -4 https://scripts.kalixhosting.com/ubuntu/lampfullstacks/ -O install.sh && bash install.sh
+ wget -4 https://scripts.kalixhosting.com/ubuntu/16-22/lampfull/ -O install.sh && bash install.sh
 
 ```
     
