@@ -81,7 +81,7 @@ sudo mkdir -p /var/www/kalixhosting.com/public_html
 
 sudo chown -R www-data: /var/www/kalixhosting.com
 
-sudo chown -R www-data: /var/www/kalixhosting.com
+
 
 nano /etc/apache2/sites-available/kalixhosting.com.conf
 
